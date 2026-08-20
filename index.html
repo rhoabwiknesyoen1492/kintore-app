@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>筋トレログ</title>
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💪</text></svg>">
+    <style>
+        * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background-color: #f2f2f7; margin: 0; padding: 16px; padding-top: 0; color: #1c1c1e; }
+        .container { max-width: 500px; margin: 0 auto; }
+        
+        /* スクロール追従（Sticky）設定 */
+        .sticky-top { position: sticky; top: 0; background-color: #f2f2f7; padding-top: 16px; padding-bottom: 10px; z-index: 100; border-bottom: 1px solid #e5e5ea; margin-bottom: 16px; }
+        
+        .tab-buttons { display: flex; background: #e3e3e8; padding: 3px; border-radius: 9px; margin-bottom: 16px; }
+        .tab-btn { flex: 1; border: none; padding: 8px; border-radius: 7px; font-weight: 600; font-size: 14px; background: transparent; cursor: pointer; }
+        .tab-btn.active { background: #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        
+        .timers { display: flex; gap: 12px; }
+        .timer-card { flex: 1; background: #ffffff; padding: 12px; border-radius: 12px; text-align: center; display: flex; flex-direction: column; justify-content: center; }
+        .timer-title { font-size: 12px; font-weight: bold; margin-bottom: 4px; }
+        .timer-display { font-family: monospace; font-size: 28px; font-weight: bold; margin: 6px 0; }
+        .next-exercise-info { font-size: 11px; color: #8e8e93; margin-top: 6px; font-weight: bold; }
+        
+        .btn { border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; font-size: 12px; cursor: pointer; }
+        .btn-red { background: #ffe5e5; color: #ff3b30; }
+        .btn-green { background: #e5f9e7; color: #34c759; }
+        .btn-gray { background: #e5e5ea; color: #8e8e93; }
+        .btn-purple { background: #f3e8ff; color: #af52de; }
+        .btn-blue { background: #e5f2ff; color: #007aff; }
+        .btn-blue-full { background: #007aff; color: #ffffff; width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 14px; border: none; margin-top: 10px; cursor: pointer; }
+        .btn-green-full { background: #34c759; color: #ffffff; width: 100%; padding: 14px; border-radius: 8px; font-weight: bold; font-size: 15px; border: none; margin-top: 12px; cursor: pointer; }
+        
+        .card { background: #ffffff; padding: 16px; border-radius: 12px; margin-bottom: 16px; }
+        .card-title { font-size: 15px; font-weight: bold; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+        
+        .form-row-select { display: flex; gap: 8px; margin-bottom: 12px; }
+        .form-row-select select { flex: 1; padding: 8px; border: 1px solid #c7c7cc; border-radius: 8px; font-size: 14px; background: #fff; }
+        
+        .form-row-inputs { display: flex; justify-content: space-around; align-items: center; background: #fff; padding: 10px 6px; border-radius: 8px; border: 1px solid #e5e5ea; margin-bottom: 10px; gap: 4px; }
+        .input-group { display: flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 500; }
+        .input-group input { width: 44px; padding: 6px 2px; border: 1px solid #c7c7cc; border-radius: 6px; font-size: 14px; text-align: center; }
+        .v-label { writing-mode: vertical-rl; font-size: 11px; letter-spacing: 1px; color: #3c3c43; }
+
+        .recent-record-box { background: #eef6ff; border: 1px solid #cce3ff; border-radius: 8px; padding: 10px 12px; font-size: 12px; color: #0056b3; margin-bottom: 10px; }
+        .recent-header { display: flex; justify-content: space-between; align-items: center; font-weight: bold; margin-bottom: 6px; border-bottom: 1px dashed #cce3ff; padding-bottom: 4px; }
+        .recent-item { display: flex; justify-content: space-between; margin-top: 3px; font-size: 11px; }
+
+        .routine-bar { display: flex; gap: 8px; margin-bottom: 12px; }
+        .routine-bar select { flex: 1; padding: 8px; border: 1px solid #c7c7cc; border-radius: 8px; font-size: 13px; background: #fff; }
+
+        .exercise-unit { background: #f8f8f8; border: 1px solid #e5e5ea; border-radius: 10px; padding: 12px; margin-bottom: 12px; }
+        .exercise-unit-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e5e5ea; padding-bottom: 8px; margin-bottom: 8px; }
+        .exercise-unit-title { font-weight: bold; font-size: 15px; display: flex; align-items: center; gap: 6px; }
+
+        .task-item { display: flex; align-items: center; padding: 8px 6px; background: #ffffff; border-radius: 6px; margin-bottom: 6px; border: 1px solid #f0f0f0; }
+        .task-item.completed { background: #e5f9e7; border-color: #c7f0cb; }
+        .task-checkbox { width: 20px; height: 20px; margin-right: 8px; cursor: pointer; }
+        .task-info { flex: 1; display: flex; align-items: center; gap: 6px; font-size: 13px; }
+        .task-name { font-weight: bold; font-size: 13px; width: 45px; }
+        
+        .inline-input { width: 45px; padding: 4px 2px; border: 1px solid #c7c7cc; border-radius: 4px; font-size: 13px; text-align: center; background: #fff; }
+        .task-item.completed .inline-input { background: transparent; border: none; padding: 0; width: auto; pointer-events: none; }
+        
+        .badge { font-size: 11px; background: #e5f2ff; color: #007aff; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
+        
+        .btn-order { background: #ffffff; border: 1px solid #c7c7cc; border-radius: 4px; font-size: 11px; padding: 3px 8px; cursor: pointer; color: #3c3c43; font-weight: bold; }
+        .btn-delete-small { background: #ffe5e5; border: none; border-radius: 4px; font-size: 12px; padding: 4px 8px; cursor: pointer; color: #ff3b30; font-weight: bold; margin-left: auto; }
+        .btn-delete-unit { background: #ffe5e5; border: none; border-radius: 4px; font-size: 11px; padding: 4px 8px; cursor: pointer; color: #ff3b30; font-weight: bold; }
+
+        .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-weight: bold; }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; }
+        .calendar-day-head { font-size: 12px; color: #8e8e93; padding: 4px 0; font-weight: bold; }
+        .calendar-cell { padding: 8px 0; font-size: 14px; border-radius: 8px; cursor: pointer; position: relative; min-height: 40px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .calendar-cell.has-data::after { content: "🔵"; font-size: 6px; position: absolute; bottom: 2px; }
+        .calendar-cell.selected { background: #007aff; color: white; font-weight: bold; }
+        .calendar-cell.selected::after { content: "⚪"; }
+        
+        .history-actions { display: flex; gap: 8px; margin-top: 10px; }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="sticky-top">
+        <div class="tab-buttons">
+            <button class="tab-btn active" onclick="switchTab(0)">🏋️ トレーニング</button>
+            <button class="tab-btn" onclick="switchTab(1)">📜 過去の履歴</button>
+        </div>
+
+        <div class="timers">
+            <div class="timer-card" style="background: #fff5f5;">
+                <div class="timer-title" style="color: #ff3b30;">🏋️ 全体時間</div>
+                <div class="timer-display" id="total-timer-text" style="color: #ff3b30;">00:00</div>
+                <button class="btn btn-red" id="total-timer-btn" onclick="toggleTotalTimer()">全体計測</button>
+            </div>
+            <div class="timer-card" style="background: #f5fff6;">
+                <div class="timer-title" id="rest-title" style="color: #34c759;">☕ レスト</div>
+                <div class="timer-display" id="rest-timer-text" style="color: #34c759;">00:00</div>
+                <div style="display:flex; justify-content:center; gap:4px;">
+                    <button class="btn btn-green" id="rest-timer-btn" onclick="toggleRestTimer()">再開</button>
+                    <button class="btn btn-gray" onclick="resetRestTimer()">リセット</button>
+                </div>
+                <div id="next-exercise-info" class="next-exercise-info hidden">次: なし</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="tab-workout">
+        <div class="card" style="background: #f0f8ff;">
+            <div class="card-title">【1. 部位・種目を選んで追加】</div>
+            <div class="form-row-select">
+                <select id="category-select" onchange="updateExerciseOptions()" style="width: 30%;">
+                    <option value="胸">胸</option>
+                    <option value="肩">肩</option>
+                    <option value="三頭筋">三頭筋</option>
+                    <option value="背中">背中</option>
+                    <option value="二頭筋">二頭筋</option>
+                    <option value="脚">脚</option>
+                </select>
+                <div style="display: flex; flex: 1; gap: 4px;">
+                    <select id="exercise-select" onchange="onExerciseChange()" style="flex: 1;"></select>
+                    <!-- 【追加】オリジナル種目作成ボタン -->
+                    <button class="btn btn-gray" style="padding: 0 12px; font-size: 16px;" onclick="createNewExercise()" title="新種目を作成">＋</button>
+                </div>
+            </div>
+
+            <div id="recent-record-container" class="recent-record-box hidden">
+                <div class="recent-header">
+                    <span id="recent-date-text">💡 前回記録</span>
+                </div>
+                <div id="recent-sets-list"></div>
+            </div>
+
+            <div class="form-row-inputs">
+                <div class="input-group">
+                    <span class="v-label">重量</span>
+                    <input type="number" id="input-weight" value="50">
+                    <span>kg</span>
+                </div>
+                <div class="input-group">
+                    <span class="v-label">回数</span>
+                    <input type="number" id="input-reps" value="10">
+                    <span>回</span>
+                </div>
+                <div class="input-group">
+                    <span class="v-label">レスト</span>
+                    <input type="number" id="input-rest" value="120">
+                    <span>秒</span>
+                </div>
+            </div>
+
+            <button class="btn-blue-full" onclick="addMenuTask()">種目を追加する</button>
+        </div>
+
+        <div class="card">
+            <div class="card-title">
+                <span>【2. メニュー実行】</span>
+                <button class="btn btn-red" onclick="clearMenu()">全削除</button>
+            </div>
+
+            <div class="routine-bar">
+                <select id="routine-select">
+                    <option value="">-- 保存済みルーティーン --</option>
+                </select>
+                <button class="btn btn-purple" onclick="loadRoutine()">読込</button>
+                <button class="btn btn-gray" onclick="saveNewRoutine()">名前をつけて保存</button>
+            </div>
+
+            <div id="task-list"></div>
+            <button class="btn-green-full" onclick="saveWorkout()">本日の記録を保存して完了</button>
+        </div>
+    </div>
+
+    <div id="tab-history" class="hidden">
+        <div class="card">
+            <div class="calendar-header">
+                <button class="btn btn-gray" onclick="changeMonth(-1)">◀ 前月</button>
+                <span id="calendar-month-title">2026年 8月</span>
+                <button class="btn btn-gray" onclick="changeMonth(1)">次月 ▶</button>
+            </div>
+            <div class="calendar-grid">
+                <div class="calendar-day-head" style="color:#ff3b30;">日</div>
+                <div class="calendar-day-head">月</div>
+                <div class="calendar-day-head">火</div>
+                <div class="calendar-day-head">水</div>
+                <div class="calendar-day-head">木</div>
+                <div class="calendar-day-head">金</div>
+                <div class="calendar-day-head" style="color:#007aff;">土</div>
+            </div>
+            <div class="calendar-grid" id="calendar-days"></div>
+        </div>
+
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <div class="card-title" style="margin: 0;" id="selected-date-title">選択した日の記録</div>
+                <button class="btn btn-red" onclick="clearHistory()">全履歴消去</button>
+            </div>
+            <div id="day-history-list"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // デフォルトの種目マスタ
+    var defaultExerciseMaster = {
+        "胸": [{ name: "ベンチプレス", type: "compound" }, { name: "インクラインプレス", type: "compound" }, { name: "チェストフライ", type: "isolation" }],
+        "肩": [{ name: "ショルダープレス", type: "compound" }, { name: "サイドレイズ", type: "isolation" }],
+        "三頭筋": [{ name: "ライイングエクステンション", type: "isolation" }, { name: "プレスダウン", type: "isolation" }],
+        "背中": [{ name: "デッドリフト", type: "compound" }, { name: "ラットプルダウン", type: "compound" }, { name: "シーテッドロウ", type: "compound" }],
+        "二頭筋": [{ name: "EZバーカール", type: "isolation" }, { name: "インクラインカール", type: "isolation" }],
+        "脚": [{ name: "スクワット", type: "compound" }, { name: "レッグプレス", type: "compound" }, { name: "レッグエクステンション", type: "isolation" }]
+    };
+
+    // ストレージから種目を読み込む（なければデフォルト）
+    var exerciseMaster = JSON.parse(localStorage.getItem('workout_exercises')) || defaultExerciseMaster;
+
+    var menu = [];
+    var histories = JSON.parse(localStorage.getItem('workout_histories') || '[]');
+    var routines = JSON.parse(localStorage.getItem('workout_routines') || '{}');
+    
+    var totalStartTime = 0, totalElapsedBeforePause = 0, totalTimer = null;
+    var restTimer = null, restSeconds = 0;
+    var hasWarned10Sec = false;
+
+    var currentCalDate = new Date();
+    var selectedDateStr = formatDate(new Date());
+
+    function init() {
+        requestNotificationPermission();
+        updateExerciseOptions();
+        updateRoutineSelect();
+        renderMenu();
+        renderCalendar();
+        renderDayHistory(selectedDateStr);
+    }
+
+    function requestNotificationPermission() {
+        if ("Notification" in window && Notification.permission === "default") {
+            Notification.requestPermission();
+        }
+    }
+
+    function triggerNotify(title, body) {
+        if ("Notification" in window && Notification.permission === "granted") {
+            new Notification(title, { body: body });
+        }
+    }
+
+    function switchTab(index) {
+        var btns = document.querySelectorAll('.tab-btn');
+        btns[0].classList.toggle('active', index === 0);
+        btns[1].classList.toggle('active', index === 1);
+        document.getElementById('tab-workout').classList.toggle('hidden', index !== 0);
+        document.getElementById('tab-history').classList.toggle('hidden', index !== 1);
+    }
+
+    // 【追加】オリジナル種目を作成・保存する関数
+    function createNewExercise() {
+        var cat = document.getElementById('category-select').value;
+        var newName = prompt('【' + cat + '】の新しい種目名を入力してください:');
+        
+        if (!newName || newName.trim() === '') return;
+        
+        // 既に同じ名前の種目があるかチェック
+        var exists = exerciseMaster[cat].some(function(ex) { return ex.name === newName; });
+        if (exists) {
+            alert('その種目はすでに存在します！');
+            return;
+        }
+
+        // 種目を追加して保存
+        exerciseMaster[cat].push({ name: newName, type: "compound" });
+        localStorage.setItem('workout_exercises', JSON.stringify(exerciseMaster));
+        
+        // リストを更新して新しい種目を選択
+        updateExerciseOptions();
+        document.getElementById('exercise-select').value = newName;
+        onExerciseChange();
+        
+        alert('新しい種目「' + newName + '」を追加しました！');
+    }
+
+    function updateExerciseOptions() {
+        var cat = document.getElementById('category-select').value;
+        var exSelect = document.getElementById('exercise-select');
+        var list = exerciseMaster[cat];
+        var html = '';
+        for (var i = 0; i < list.length; i++) {
+            html += '<option value="' + list[i].name + '">' + list[i].name + '</option>';
+        }
+        exSelect.innerHTML = html;
+        onExerciseChange();
+    }
+
+    function onExerciseChange() {
+        var cat = document.getElementById('category-select').value;
+        var exName = document.getElementById('exercise-select').value;
+        var target = exerciseMaster[cat].find(function(item) { return item.name === exName; });
+        if (target) document.getElementById('input-rest').value = (target.type === "compound") ? 120 : 60;
+        showRecentRecord();
+    }
+
+    function showRecentRecord() {
+        var ex = document.getElementById('exercise-select').value;
+        var box = document.getElementById('recent-record-container');
+        var dateText = document.getElementById('recent-date-text');
+        var setsList = document.getElementById('recent-sets-list');
+        var recentTasks = [];
+        var recentDate = "";
+
+        for (var i = 0; i < histories.length; i++) {
+            var matched = histories[i].tasks.filter(function(t) { return t.exerciseName === ex; });
+            if (matched.length > 0) {
+                recentTasks = matched;
+                recentDate = histories[i].dateStr;
+                break;
+            }
+        }
+
+        if (recentTasks.length > 0) {
+            dateText.innerText = '💡 前回記録 (' + recentDate + ')';
+            var html = '';
+            for (var k = 0; k < recentTasks.length; k++) {
+                html += '<div class="recent-item"><span>' + recentTasks[k].setNumber + 'セット目: ' + recentTasks[k].weight + 'kg × ' + recentTasks[k].reps + '回</span><span>(レスト ' + recentTasks[k].restSeconds + '秒)</span></div>';
+            }
+            setsList.innerHTML = html;
+            box.classList.remove('hidden');
+
+            var lastSet = recentTasks[recentTasks.length - 1];
+            document.getElementById('input-weight').value = lastSet.weight;
+            document.getElementById('input-reps').value = lastSet.reps;
+            document.getElementById('input-rest').value = lastSet.restSeconds;
+        } else {
+            box.classList.add('hidden');
+        }
+    }
+
+    function addMenuTask() {
+        var cat = document.getElementById('category-select').value;
+        var ex = document.getElementById('exercise-select').value;
+        var w = parseFloat(document.getElementById('input-weight').value) || 0;
+        var r = parseInt(document.getElementById('input-reps').value) || 0;
+        var rest = parseInt(document.getElementById('input-rest').value) || 120;
+        var setCount = menu.filter(function(t) { return t.exerciseName === ex; }).length + 1;
+
+        menu.push({ id: Date.now() + Math.random(), category: cat, exerciseName: ex, weight: w, reps: r, setNumber: setCount, restSeconds: rest, isCompleted: false });
+        renderMenu();
+        updateNextExerciseInfo();
+    }
+
+    function updateMenuTask(id, field, value) {
+        var task = menu.find(function(t) { return t.id === id; });
+        if (task) {
+            task[field] = parseFloat(value) || 0;
+        }
+    }
+
+    function toggleTask(id) {
+        var task = menu.find(function(t) { return t.id === id; });
+        if (!task) return;
+        task.isCompleted = !task.isCompleted;
+
+        if (task.isCompleted) {
+            if (!totalTimer) startTotalTimer();
+            document.getElementById('rest-title').innerText = '☕ ' + task.exerciseName;
+            restSeconds = task.restSeconds;
+            startRestTimer();
+        }
+        renderMenu();
+        updateNextExerciseInfo();
+    }
+
+    function updateNextExerciseInfo() {
+        var infoDiv = document.getElementById('next-exercise-info');
+        var nextTask = menu.find(function(t) { return !t.isCompleted; });
+        if (nextTask) {
+            infoDiv.innerText = '次: ' + nextTask.exerciseName + ' ' + nextTask.weight + 'kg×' + nextTask.reps + '回';
+            infoDiv.classList.remove('hidden');
+        } else {
+            infoDiv.classList.add('hidden');
+        }
+    }
+
+    function removeTask(id) {
+        menu = menu.filter(function(t) { return t.id !== id; });
+        reindexSets();
+        renderMenu();
+        updateNextExerciseInfo();
+    }
+
+    function removeExerciseGroup(exerciseName) {
+        if (confirm('種目「' + exerciseName + '」を削除しますか？')) {
+            menu = menu.filter(function(t) { return t.exerciseName !== exerciseName; });
+            renderMenu();
+            updateNextExerciseInfo();
+        }
+    }
+
+    function reindexSets() {
+        var groups = getExerciseGroups();
+        for (var g = 0; g < groups.length; g++) {
+            for (var i = 0; i < groups[g].tasks.length; i++) {
+                groups[g].tasks[i].setNumber = i + 1;
+            }
+        }
+    }
+
+    function moveExerciseGroup(exerciseName, direction) {
+        var groups = getExerciseGroups();
+        var idx = groups.findIndex(function(g) { return g.exerciseName === exerciseName; });
+        var newIdx = idx + direction;
+        if (newIdx < 0 || newIdx >= groups.length) return;
+
+        var temp = groups[idx];
+        groups[idx] = groups[newIdx];
+        groups[newIdx] = temp;
+
+        var newMenu = [];
+        for (var i = 0; i < groups.length; i++) newMenu = newMenu.concat(groups[i].tasks);
+        menu = newMenu;
+        renderMenu();
+    }
+
+    function getExerciseGroups() {
+        var groups = [], groupMap = {};
+        for (var i = 0; i < menu.length; i++) {
+            var t = menu[i];
+            if (!groupMap[t.exerciseName]) {
+                groupMap[t.exerciseName] = { category: t.category, exerciseName: t.exerciseName, tasks: [] };
+                groups.push(groupMap[t.exerciseName]);
+            }
+            groupMap[t.exerciseName].tasks.push(t);
+        }
+        return groups;
+    }
+
+    function renderMenu() {
+        var list = document.getElementById('task-list');
+        if (menu.length === 0) {
+            list.innerHTML = '<div style="text-align: center; color: #8e8e93; padding: 20px;">メニューを追加してください</div>';
+            return;
+        }
+
+        var groups = getExerciseGroups();
+        var html = '';
+
+        for (var g = 0; g < groups.length; g++) {
+            var group = groups[g];
+            html += '<div class="exercise-unit">' +
+                '<div class="exercise-unit-header">' +
+                    '<div class="exercise-unit-title"><span class="badge">' + group.category + '</span> ' + group.exerciseName + '</div>' +
+                    '<div style="display:flex; gap:6px;">' +
+                        '<button class="btn-order" onclick="moveExerciseGroup(\'' + group.exerciseName + '\', -1)" ' + (g===0 ? 'disabled' : '') + '>▲</button>' +
+                        '<button class="btn-order" onclick="moveExerciseGroup(\'' + group.exerciseName + '\', 1)" ' + (g===groups.length-1 ? 'disabled' : '') + '>▼</button>' +
+                        '<button class="btn-delete-unit" onclick="removeExerciseGroup(\'' + group.exerciseName + '\')">🗑️</button>' +
+                    '</div>' +
+                '</div>';
+
+            for (var i = 0; i < group.tasks.length; i++) {
+                var t = group.tasks[i];
+                html += '<div class="task-item ' + (t.isCompleted ? 'completed' : '') + '">' +
+                    '<input type="checkbox" class="task-checkbox" ' + (t.isCompleted ? 'checked' : '') + ' onchange="toggleTask(' + t.id + ')">' +
+                    '<div class="task-info">' +
+                        '<span class="task-name">' + t.setNumber + 'ｾｯﾄ</span>' +
+                        '<input type="number" class="inline-input" value="' + t.weight + '" onchange="updateMenuTask(' + t.id + ', \'weight\', this.value)"> kg × ' +
+                        '<input type="number" class="inline-input" value="' + t.reps + '" onchange="updateMenuTask(' + t.id + ', \'reps\', this.value)"> 回' +
+                    '</div>' +
+                    '<button class="btn-delete-small" onclick="removeTask(' + t.id + ')">×</button>' +
+                '</div>';
+            }
+            html += '</div>';
+        }
+        list.innerHTML = html;
+    }
+
+    function updateRoutineSelect() {
+        var select = document.getElementById('routine-select');
+        var keys = Object.keys(routines);
+        var html = '<option value="">-- 保存済みルーティーン --</option>';
+        for (var i = 0; i < keys.length; i++) html += '<option value="' + keys[i] + '">' + keys[i] + '</option>';
+        select.innerHTML = html;
+    }
+
+    function saveNewRoutine() {
+        if (menu.length === 0) return alert('保存するメニューがありません。');
+        var name = prompt('ルーティーン名を入力してください:');
+        if (!name) return;
+        routines[name] = menu.map(function(t) { return { category: t.category, exerciseName: t.exerciseName, weight: t.weight, reps: t.reps, setNumber: t.setNumber, restSeconds: t.restSeconds }; });
+        localStorage.setItem('workout_routines', JSON.stringify(routines));
+        updateRoutineSelect();
+        alert('保存しました！');
+    }
+
+    function loadRoutine() {
+        var name = document.getElementById('routine-select').value;
+        if (!name || !routines[name]) return alert('選択してください。');
+        menu = routines[name].map(function(t) { return { id: Date.now() + Math.random(), category: t.category, exerciseName: t.exerciseName, weight: t.weight, reps: t.reps, setNumber: t.setNumber, restSeconds: t.restSeconds, isCompleted: false }; });
+        renderMenu();
+        updateNextExerciseInfo();
+    }
+
+    function startTotalTimer() {
+        clearInterval(totalTimer);
+        totalStartTime = Date.now();
+        totalTimer = setInterval(function() {
+            var currentSec = Math.floor((Date.now() - totalStartTime) / 1000) + totalElapsedBeforePause;
+            document.getElementById('total-timer-text').innerText = formatTime(currentSec);
+        }, 1000);
+        document.getElementById('total-timer-btn').innerText = "一時停止";
+    }
+
+    function toggleTotalTimer() {
+        if (totalTimer) {
+            clearInterval(totalTimer); totalTimer = null;
+            totalElapsedBeforePause += Math.floor((Date.now() - totalStartTime) / 1000);
+            document.getElementById('total-timer-btn').innerText = "全体計測";
+        } else {
+            startTotalTimer();
+        }
+    }
+
+    function startRestTimer() {
+        clearInterval(restTimer); hasWarned10Sec = false;
+        restTimer = setInterval(function() {
+            restSeconds--;
+            if (restSeconds === 10 && !hasWarned10Sec) { hasWarned10Sec = true; triggerNotify("⏳", "あと10秒！"); }
+            if (restSeconds > 0) {
+                document.getElementById('rest-timer-text').innerText = formatTime(restSeconds);
+            } else {
+                resetRestTimer();
+                triggerNotify("💪", "レスト終了！");
+            }
+        }, 1000);
+        document.getElementById('rest-timer-btn').innerText = "停止";
+    }
+
+    function toggleRestTimer() {
+        if (restTimer) {
+            clearInterval(restTimer); restTimer = null;
+            document.getElementById('rest-timer-btn').innerText = "再開";
+        } else if (restSeconds > 0) {
+            startRestTimer();
+        }
+    }
+
+    function resetRestTimer() {
+        clearInterval(restTimer); restTimer = null; restSeconds = 0; hasWarned10Sec = false;
+        document.getElementById('rest-timer-text').innerText = "00:00";
+        document.getElementById('rest-title').innerText = "☕ レスト";
+    }
+
+    function clearMenu() {
+        menu = []; resetRestTimer(); renderMenu(); updateNextExerciseInfo();
+    }
+
+    function saveWorkout() {
+        var completed = menu.filter(function(t) { return t.isCompleted; });
+        if (completed.length === 0 && menu.length === 0) return;
+        var currentTotalSec = totalElapsedBeforePause + (totalTimer ? Math.floor((Date.now() - totalStartTime) / 1000) : 0);
+        var now = new Date();
+        histories.unshift({ id: Date.now(), dateStr: formatDate(now), fullDateStr: now.toLocaleString('ja-JP'), duration: currentTotalSec, tasks: completed.length > 0 ? completed : menu });
+        localStorage.setItem('workout_histories', JSON.stringify(histories));
+
+        clearMenu();
+        clearInterval(totalTimer); totalTimer = null; totalStartTime = 0; totalElapsedBeforePause = 0;
+        document.getElementById('total-timer-text').innerText = "00:00";
+        document.getElementById('total-timer-btn').innerText = "全体計測";
+
+        selectedDateStr = formatDate(now);
+        renderCalendar(); renderDayHistory(selectedDateStr); showRecentRecord(); switchTab(1);
+    }
+
+    function renderCalendar() {
+        var year = currentCalDate.getFullYear(), month = currentCalDate.getMonth();
+        document.getElementById('calendar-month-title').innerText = year + '年 ' + (month + 1) + '月';
+        var firstDay = new Date(year, month, 1).getDay(), lastDate = new Date(year, month + 1, 0).getDate();
+        var html = '';
+        for (var i = 0; i < firstDay; i++) html += '<div></div>';
+        for (var d = 1; d <= lastDate; d++) {
+            var dStr = formatDate(new Date(year, month, d));
+            var hasData = histories.some(function(h) { return h.dateStr === dStr; });
+            html += '<div class="calendar-cell ' + (hasData ? 'has-data ' : '') + (dStr === selectedDateStr ? 'selected' : '') + '" onclick="selectDate(\'' + dStr + '\')">' + d + '</div>';
+        }
+        document.getElementById('calendar-days').innerHTML = html;
+    }
+
+    function changeMonth(diff) { currentCalDate.setMonth(currentCalDate.getMonth() + diff); renderCalendar(); }
+    function selectDate(dStr) { selectedDateStr = dStr; renderCalendar(); renderDayHistory(dStr); }
+
+    function renderDayHistory(dStr) {
+        document.getElementById('selected-date-title').innerText = dStr + ' の記録';
+        var list = document.getElementById('day-history-list');
+        var filtered = histories.filter(function(h) { return h.dateStr === dStr; });
+
+        if (filtered.length === 0) {
+            list.innerHTML = '<div style="text-align: center; color: #8e8e93; padding: 20px;">記録はありません</div>';
+            return;
+        }
+
+        var html = '';
+        for (var i = 0; i < filtered.length; i++) {
+            var h = filtered[i];
+            html += '<div style="border-bottom: 1px solid #e5e5ea; padding: 10px 0; margin-bottom: 10px;">' +
+                '<div style="font-weight: bold; font-size: 13px; margin-bottom: 8px;">📅 ' + h.fullDateStr + ' (時間: ' + formatTime(h.duration) + ')</div>';
+            
+            var groups = {};
+            for (var j = 0; j < h.tasks.length; j++) {
+                var t = h.tasks[j];
+                if (!groups[t.exerciseName]) groups[t.exerciseName] = { cat: t.category, sets: [] };
+                groups[t.exerciseName].sets.push(t.weight + 'kg×' + t.reps + '回');
+            }
+            
+            for (var exName in groups) {
+                html += '<div style="font-size: 12px; color: #3a3a3c; margin-top: 4px; line-height: 1.4;">' +
+                        '<b>・[' + groups[exName].cat + '] ' + exName + '</b><br>' + 
+                        '<span style="padding-left:12px;">' + groups[exName].sets.join(', ') + '</span>' +
+                        '</div>';
+            }
+            
+            html += '<div class="history-actions">' +
+                '<button class="btn btn-blue" onclick="copyHistoryToMenu(' + h.id + ')">📝 今日のメニューにコピー</button>' +
+                '<button class="btn btn-purple" onclick="saveHistoryAsRoutine(' + h.id + ')">💾 ルーティーンに保存</button>' +
+                '</div></div>';
+        }
+        list.innerHTML = html;
+    }
+
+    function copyHistoryToMenu(historyId) {
+        var h = histories.find(function(item) { return item.id === historyId; });
+        if (!h) return;
+        var copyTasks = JSON.parse(JSON.stringify(h.tasks));
+        copyTasks.forEach(function(t) { t.id = Date.now() + Math.random(); t.isCompleted = false; });
+        menu = menu.concat(copyTasks);
+        renderMenu(); updateNextExerciseInfo(); switchTab(0);
+        alert('今日のメニューにコピーしました！');
+    }
+
+    function saveHistoryAsRoutine(historyId) {
+        var h = histories.find(function(item) { return item.id === historyId; });
+        if (!h) return;
+        var name = prompt('この日の記録をルーティーンとして保存します。名前を入力してください:');
+        if (!name) return;
+        routines[name] = JSON.parse(JSON.stringify(h.tasks));
+        localStorage.setItem('workout_routines', JSON.stringify(routines));
+        updateRoutineSelect();
+        alert('ルーティーン「' + name + '」を保存しました！');
+    }
+
+    function clearHistory() {
+        if (confirm('すべての過去履歴を削除しますか？')) {
+            histories = []; localStorage.removeItem('workout_histories');
+            renderCalendar(); renderDayHistory(selectedDateStr); showRecentRecord();
+        }
+    }
+
+    function formatDate(dt) { return dt.getFullYear() + '/' + ('0' + (dt.getMonth() + 1)).slice(-2) + '/' + ('0' + dt.getDate()).slice(-2); }
+    function formatTime(sec) { var m = Math.floor(sec / 60), s = sec % 60; return (m < 10 ? '0' + m : m) + ':' + (s < 10 ? '0' + s : s); }
+
+    init();
+</script>
+</body>
+</html>
