@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>筋トレ記録アプリ</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background-color: #f4f5f7;
+      margin: 0;
+      padding: 20px;
+    }
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+    .card-title {
+      font-weight: bold;
+      margin-bottom: 12px;
+      font-size: 16px;
+    }
+    .input-group {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .input-group select, .input-group input {
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+    .btn-add {
+      width: 100%;
+      padding: 12px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .btn-add:hover {
+      background-color: #0056b3;
+    }
+    .btn-delete {
+      background-color: #ff4d4f;
+      color: white;
+      border: none;
+      padding: 4px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    
+    /* 種目ごとのグループ表示 */
+    .exercise-block {
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 12px;
+      background-color: #fafafa;
+    }
+    .exercise-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: bold;
+      color: #333;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 8px;
+      margin-bottom: 8px;
+    }
+    .set-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .set-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 0;
+    }
+    .set-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-save {
+      width: 100%;
+      padding: 12px;
+      background-color: #28a745;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 12px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 1. 部位・種目を選んで追加 -->
+  <div class="card">
+    <div class="card-title">【1. 部位・種目を選んで追加】</div>
+    
+    <div class="input-group">
+      <select id="bodyPart" style="flex: 1;">
+        <option value="胸">胸</option>
+        <option value="背中">背中</option>
+        <option value="脚">脚</option>
+      </select>
+      <select id="exercise" style="flex: 2;">
+        <option value="ベンチプレス">ベンチプレス</option>
+        <option value="インクラインベンチプレス">インクラインベンチプレス</option>
+      </select>
+    </div>
+
+    <div class="input-group">
+      <label>重量 <input type="number" id="weight" value="50" style="width: 50px;"> kg</label>
+      <label>回数 <input type="number" id="reps" value="10" style="width: 50px;"> 回</label>
+      <label>レスト <input type="number" id="rest" value="120" style="width: 50px;"> 秒</label>
+    </div>
+
+    <button class="btn-add" onclick="addExercise()">種目を追加する</button>
+  </div>
+
+  <!-- 2. メニュー実行 -->
+  <div class="card">
+    <div class="card-title" style="display: flex; justify-content: space-between;">
+      <span>【2. メニュー実行】</span>
+      <button class="btn-delete" onclick="clearAll()">全削除</button>
+    </div>
+
+    <!-- 種目ごとにグループ化されたカードがここに入ります -->
+    <div id="menuContainer"></div>
+
+    <button class="btn-save" onclick="saveRecord()">本日の記録を保存して完了</button>
+  </div>
+
+  <script>
+    // データ保持用の配列（種目単位でグループ化されたオブジェクトを格納）
+    let menuList = [];
+
+    // 種目追加処理
+    function addExercise() {
+      const bodyPart = document.getElementById("bodyPart").value;
+      const exercise = document.getElementById("exercise").value;
+      const weight = document.getElementById("weight").value;
+      const reps = document.getElementById("reps").value;
+      const rest = document.getElementById("rest").value;
+
+      // 既存の種目があるか確認
+      let targetExercise = menuList.find(item => item.exercise === exercise);
+
+      if (targetExercise) {
+        // 既存の種目の中にセットを追加
+        targetExercise.sets.push({ weight, reps, rest });
+      } else {
+        // 新しい種目として追加
+        menuList.push({
+          bodyPart: bodyPart,
+          exercise: exercise,
+          sets: [{ weight, reps, rest }]
+        });
+      }
+
+      renderMenu();
+    }
+
+    // セット単体の削除
+    function removeSet(exerciseIndex, setIndex) {
+      menuList[exerciseIndex].sets.splice(setIndex, 1);
+      
+      // セットが0個になったら種目自体も削除
+      if (menuList[exerciseIndex].sets.length === 0) {
+        menuList.splice(exerciseIndex, 1);
+      }
+
+      renderMenu();
+    }
+
+    // 種目ごとの丸ごと削除
+    function removeExercise(exerciseIndex) {
+      menuList.splice(exerciseIndex, 1);
+      renderMenu();
+    }
+
+    // 全削除
+    function clearAll() {
+      menuList = [];
+      renderMenu();
+    }
+
+    // 画面描画処理（種目ごとにグループ化して出力）
+    function renderMenu() {
+      const container = document.getElementById("menuContainer");
+      container.innerHTML = "";
+
+      menuList.forEach((item, exerciseIndex) => {
+        const block = document.createElement("div");
+        block.className = "exercise-block";
+
+        // 種目のヘッダー部分
+        let html = `
+          <div class="exercise-header">
+            <span>[${item.bodyPart}] ${item.exercise}</span>
+            <button class="btn-delete" onclick="removeExercise(${exerciseIndex})">種目を削除</button>
+          </div>
+          <ul class="set-list">
+        `;
+
+        // 種目の中に含まれるセット一覧
+        item.sets.forEach((set, setIndex) => {
+          html += `
+            <li class="set-item">
+              <div class="set-info">
+                <input type="checkbox">
+                <span>${setIndex + 1}セット目: ${set.weight}kg × ${set.reps}回 (${set.rest}秒)</span>
+              </div>
+              <button class="btn-delete" onclick="removeSet(${exerciseIndex}, ${setIndex})">削除</button>
+            </li>
+          `;
+        });
+
+        html += `</ul>`;
+        block.innerHTML = html;
+        container.appendChild(block);
+      });
+    }
+
+    // 保存ボタン処理（例）
+    function saveRecord() {
+      console.log("保存データ:", menuList);
+      alert("記録を保存しました！");
+    }
+  </script>
+</body>
+</html>
